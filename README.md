@@ -510,3 +510,102 @@ Some uri:
 # http://mypublichostname:9393/_plugin/bigdesk
 # http://mypublichostname:9393/_plugin/head/
 ```
+
+
+## Install logstash
+
+```bash
+# install logstash
+cd ~/tmp
+mkdir logstash
+cd logstash/
+
+# download elastic search package
+wget https://download.elastic.co/logstash/logstash/packages/centos/logstash-1.5.4-1.noarch.rpm
+
+# install package
+yum install logstash-1.5.4-1.noarch.rpm -y
+
+# configure logstash
+vim /etc/init.d/logstash
+```
+
+Should looks like something like this :
+
+```
+LS_USER=logstash
+LS_GROUP=logstash
+LS_HOME=/var/lib/logstash
+LS_HEAP_SIZE="500m"
+LS_LOG_DIR=/var/log/logstash
+LS_LOG_FILE="${LS_LOG_DIR}/$name.log"
+LS_CONF_DIR=/etc/logstash/conf.d
+LS_OPEN_FILES=16384
+LS_NICE=19
+LS_OPTS=""
+```
+
+##### Configure file for nginx logger 
+
+```bash
+vim /etc/logstash/conf.d/nginx.conf
+```
+
+```
+input {
+	file {
+		path => "/var/log/nginx/*access*"
+	}
+}
+
+filter {
+	mutate { replace => { "type" => "nginx_access" } }
+	grok {
+		patterns_dir => "/etc/logstash/patterns/"
+		match => { "message" => "%{NGINXACCESS}" }
+	}
+	date {
+		match => [ "timestamp" , "dd/MMM/YYYY:HH:mm:ss Z" ]
+	}
+	geoip {
+		source => "clientip"
+	}
+}
+
+output {
+	elasticsearch {
+		host => "localhost"
+		protocol => "http"
+	}
+	stdout { codec => rubydebug }
+}
+```
+
+```bash
+# create pattern file
+mkdir /etc/logstash/patterns/
+vim /etc/logstash/patterns/nginx
+```
+
+```
+NGUSERNAME [a-zA-Z\.\@\-\+_%]+
+NGUSER %{NGUSERNAME}
+NGINXACCESS %{IPORHOST:http_host} %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] \"(?:%{WORD:verb} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:rawrequest})\" %{NUMBER:response} (?:%{NUMBER:bytes}|-) %{QS:referrer} %{QS:agent} %{NUMBER:request_time:float} %{NUMBER:upstream_time:float}
+NGINXACCESS %{IPORHOST:http_host} %{IPORHOST:clientip} \[%{HTTPDATE:timestamp}\] \"(?:%{WORD:verb} %{NOTSPACE:request}(?: HTTP/%{NUMBER:httpversion})?|%{DATA:rawrequest})\" %{NUMBER:response} (?:%{NUMBER:bytes}|-) %{QS:referrer} %{QS:agent} %{NUMBER:request_time:float}
+```
+
+```bash
+# check it logs correctly
+# start logstash manualy
+# it should print log on the stdout
+# ways about 10 seconds after having typing this line
+# then after try to use a webbrowser or curl to call a web page to generate log
+/opt/logstash/bin/logstash -f /etc/logstash/conf.d/nginx.conf
+
+# if we see lines printing then it's ok
+# then we can start the service using the right way
+service logstash start
+
+# ensure start service at boot time
+chkconfig logstash on
+```
