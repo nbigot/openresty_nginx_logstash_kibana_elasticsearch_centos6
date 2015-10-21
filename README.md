@@ -399,3 +399,114 @@ server {
 service nginx reload
 ```
 
+
+## Install elasticsearch
+
+```bash
+# configure package
+vim /etc/yum.repos.d/elasticsearch.repo
+```
+
+```
+[elasticsearch-1.7]
+name=Elasticsearch repository for 1.7.x packages
+baseurl=http://packages.elastic.co/elasticsearch/1.7/centos
+gpgcheck=1
+gpgkey=http://packages.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+```
+
+```bash
+# install package
+yum install elasticsearch
+
+# check config
+more /etc/init.d/elasticsearch
+
+# add some plugins (as you wish)
+/usr/share/elasticsearch/bin/plugin -install mobz/elasticsearch-head
+/usr/share/elasticsearch/bin/plugin -install lukas-vlcek/bigdesk
+/usr/share/elasticsearch/bin/plugin -install royrusso/elasticsearch-HQ
+/usr/share/elasticsearch/bin/plugin -install elasticsearch/marvel/latest
+```
+
+```bash
+# edit existing config file (change the original file)
+vim /etc/elasticsearch/elasticsearch.yml
+```
+
+```
+# somewhere in the file...
+
+#################################### Paths ####################################
+
+# Path to directory containing configuration (this file and logging.yml):
+#
+#path.conf: /path/to/conf
+path.conf: /etc/elasticsearch
+
+# Path to directory where to store index data allocated for this node.
+#
+#path.data: /path/to/data
+path.data: /var/lib/elasticsearch
+
+#
+# Can optionally include more than one location, causing data to be striped across
+# the locations (a la RAID 0) on a file level, favouring locations with most free
+# space on creation. For example:
+#
+#path.data: /path/to/data1,/path/to/data2
+
+# Path to temporary files:
+#
+#path.work: /path/to/work
+path.work: /tmp/elasticsearch
+
+# Path to log files:
+#
+#path.logs: /path/to/logs
+path.logs: /var/log/elasticsearch
+
+# Path to where plugins are installed:
+#
+#path.plugins: /path/to/plugins
+path.plugins: /usr/share/elasticsearch/plugins
+
+#
+# somewhere else...
+#
+
+# http://slacklabs.be/2012/04/02/force-Elastic-search-on-ipv4-debian/
+# https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html
+#network.host: 192.168.0.1
+#network.host: localhost
+network.host: 127.0.0.1
+#network.host: _non_loopback:ipv4
+```
+
+```bash
+# restart the elasticsearch service
+service elasticsearch restart
+
+# check elastic search server is ok
+curl http://localhost:9200/_status?pretty=true
+
+# start service at boot time
+chkconfig elasticsearch on
+
+# display tcp listen ports
+netstat -putan | grep LISTEN
+```
+
+Some uri:
+
+```bash
+# uri:
+# http://mypublichostname:9200/ is not accessible from outside but is now mapped to public tcp port 9393 (see nginx config)
+# http://mypublichostname:9393/
+# http://mypublichostname:9393/_status?pretty=true
+# http://mypublichostname:9393/_plugin/HQ/
+# http://mypublichostname:9393/_plugin/marvel
+# http://mypublichostname:9393/_plugin/bigdesk
+# http://mypublichostname:9393/_plugin/head/
+```
