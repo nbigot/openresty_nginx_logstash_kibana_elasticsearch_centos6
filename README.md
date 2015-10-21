@@ -52,7 +52,7 @@ service nginx restart
 
 ## Configure nginx
 
-Edit the main nginx configuration file:
+##### Edit the main nginx configuration file:
 
 (note: this is an example but you realy should customize it for your own needs)
 
@@ -282,3 +282,120 @@ Percentage of the requests served within a certain time (ms)
   99%      4
  100%      7 (longest request)
 ```
+
+
+##### Now add a config for kibana service
+
+Some doc at https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-4-on-ubuntu-14-04
+
+```bash
+vim /etc/nginx/conf.d/kibana.conf
+```
+
+```
+# configuration file for kibana
+
+server {
+    #listen 8181 default_server;
+    listen 9292;
+    #access_log logs/server-access_log;
+    access_log off;
+    server_name _; # This is just an invalid value which will never trigger on a real hostname.
+
+    # access for kibana
+    auth_basic "Administrator Login";
+    auth_basic_user_file /var/www/.htpasswd;
+
+    location / {
+            proxy_pass http://localhost:5601;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+
+##### Now add a config for elasticsearch service
+
+```bash
+vim /etc/nginx/conf.d/elasticsearch.conf
+```
+
+```
+# config file for elasticsearch
+
+server {
+    #listen 8181 default_server;
+    listen 9393;
+	
+    #access_log logs/server-access_log;
+    access_log off;
+    #server_name _; # This is just an invalid value which will never trigger on a real hostname.
+    #server_name localhost;
+
+    # access elasticsearch
+    location / {
+        auth_basic "Administrator Login";
+        auth_basic_user_file /var/www/.htpasswd;
+
+	proxy_pass http://elasticsearch;
+	proxy_http_version 1.1;
+	proxy_set_header Connection "Keep-Alive";
+	proxy_set_header Proxy-Connection "Keep-Alive";
+    }
+}
+```
+
+
+
+##### Now add a config for munin service
+
+```bash
+vim /etc/nginx/conf.d/munin.conf
+```
+
+```
+# http://munin.readthedocs.org/en/latest/example/webserver/nginx.html
+
+server {
+    #listen 8181 default_server;
+    listen 8181;
+    #access_log logs/server-access_log;
+    access_log off;
+    server_name _; # This is just an invalid value which will never trigger on a real hostname.
+    #server_name localhost;
+
+    server_name_in_redirect off;
+    root  /var/www/html/munin/;
+
+    # access munin
+    location / {
+        auth_basic "Administrator Login";
+        auth_basic_user_file /var/www/.htpasswd;
+    }
+# disabled because stub_status module is not supported in nginx openrety
+#    location /nginx_status {
+#        stub_status on;
+#        access_log   off;
+#        allow 127.0.0.1;
+#        deny all;
+#    }
+
+    #location ^~ /munin-cgi/munin-cgi-graph/ {
+    #    fastcgi_split_path_info ^(/munin-cgi/munin-cgi-graph)(.*);
+    #    fastcgi_param PATH_INFO $fastcgi_path_info;
+    #    fastcgi_pass unix:/var/run/munin/fastcgi-munin-graph.sock;
+    #    include fastcgi_params;
+    #}
+}
+```
+
+##### Now reload nginx config without stopping the nginx server
+
+```bash
+service nginx reload
+```
+
