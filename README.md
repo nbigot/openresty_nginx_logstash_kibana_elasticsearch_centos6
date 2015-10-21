@@ -609,3 +609,60 @@ service logstash start
 # ensure start service at boot time
 chkconfig logstash on
 ```
+
+
+## Install kibana
+
+```bash
+# download and install
+cd ~/tmp
+mkdir kibana
+cd kibana/
+wget https://download.elastic.co/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz
+tar xvf kibana-4.1.2-linux-x64.tar.gz
+sudo mkdir -p /usr/share/nginx/kibana4
+sudo cp -R kibana-4.1.2-linux-x64/ /usr/share/nginx/kibana4/
+
+# see the nginx section up above for this config file
+vim /etc/nginx/conf.d/kibana.conf
+
+# configure kibana for security
+# https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-4-on-ubuntu-14-04
+vim /usr/share/nginx/kibana4/kibana-4.1.2-linux-x64/config/kibana.yml
+# in the file replace with host: "localhost"
+>>>
+# The host to bind the server to.
+#host: "0.0.0.0"
+host: "localhost"
+<<<
+
+# executable file is
+# /usr/share/nginx/kibana4/kibana-4.1.2-linux-x64/bin/kibana
+
+# we can perform a simple test by running manualy the bianry file
+/usr/share/nginx/kibana4/kibana-4.1.2-linux-x64/bin/kibana
+
+# then user a web browser and go to
+# http://mypublichostname:5601
+# if a web page displays then it's ok
+# stop the running process in unix shell by pressing ctrl+c
+
+# run kibana in background
+# warning!!! must be restarted again after server boot
+nohup /usr/share/nginx/kibana4/kibana-4.1.2-linux-x64/bin/kibana &
+
+# check it's working on localhost (private network)
+curl http://127.0.0.1:5601/
+
+# check it's NOT working using public address
+curl http://mypublichostname:5601/
+
+# check it's working using port 9292 with login and password
+curl http://login:password@mypublichostname:9292/
+
+# verify structure (change date to day date)
+curl localhost:9200/logstash-2015.10.21/_mapping?pretty
+
+# search for some doc entries
+curl -XGET localhost:9200/logstash-2015.10.21/_search?*:*
+```
