@@ -134,7 +134,6 @@ http {
 ```
 
 
-
 ##### Now add a config for simple ping/pong echo service
 
 ```bash
@@ -158,3 +157,128 @@ server {
 }
 ```
 
+
+
+##### Now add a config for redis getkey service
+
+Don't use this one if you don't understand what it does!
+It may introduce major security issues because it expose your redis data to the world!
+This is for demo only.
+
+```bash
+vim /etc/nginx/conf.d/my-service-redis.conf
+```
+
+```
+#
+# test for service redis
+#
+
+server {
+    listen       9091;
+
+    location / {
+        #debug
+        #default_type 'text/html';
+        #echo "debug: check key uri = $uri";
+        #echo "debug: args = $args";
+        #echo "debug: args param1= $arg_param1";
+
+        #set $redis_key $uri;
+        set $redis_key $arg_myrediskey;
+        #refers to the redisbackend upstream configured in the file /etc/nginx/nginx.conf
+        redis_pass     redisbackend;
+        default_type   text/html;
+        error_page     404 = /fallback;
+    }
+
+    location = /fallback {
+        #proxy_pass backend;
+        default_type 'text/html';
+        echo "debug: key not found $uri";
+    }
+}
+```
+
+##### note: this is a benchmark command for redis and nginx perfs
+
+First use the command redis-cli to set a new key named mykey1
+
+```bash
+redis-cli
+```
+
+Then type
+
+```
+redis 127.0.0.1:6379> set myrediskey "it works"
+OK
+redis 127.0.0.1:6379> exit
+```
+
+Then run the benchmark
+
+```bash
+ab -n 1000 -c 2 http://127.0.0.1:9091/?myrediskey=mykey1
+```
+
+The result looks like:
+
+```
+This is ApacheBench, Version 2.3 <$Revision: 655654 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient)
+Completed 100 requests
+Completed 200 requests
+Completed 300 requests
+Completed 400 requests
+Completed 500 requests
+Completed 600 requests
+Completed 700 requests
+Completed 800 requests
+Completed 900 requests
+Completed 1000 requests
+Finished 1000 requests
+
+
+Server Software:        openresty/1.9.3.1
+Server Hostname:        127.0.0.1
+Server Port:            9091
+
+Document Path:          /?myrediskey=mykey1
+Document Length:        11 bytes
+
+Concurrency Level:      2
+Time taken for tests:   0.354 seconds
+Complete requests:      1000
+Failed requests:        0
+Write errors:           0
+Total transferred:      158158 bytes
+HTML transferred:       11011 bytes
+Requests per second:    2826.83 [#/sec] (mean)
+Time per request:       0.708 [ms] (mean)
+Time per request:       0.354 [ms] (mean, across all concurrent requests)
+Transfer rate:          436.61 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.5      0       6
+Processing:     0    0   0.3      0       4
+Waiting:        0    0   0.3      0       4
+Total:          0    1   0.6      0       7
+WARNING: The median and mean for the total time are not within a normal deviation
+        These results are probably not that reliable.
+
+Percentage of the requests served within a certain time (ms)
+  50%      0
+  66%      1
+  75%      1
+  80%      1
+  90%      1
+  95%      2
+  98%      3
+  99%      4
+ 100%      7 (longest request)
+```
