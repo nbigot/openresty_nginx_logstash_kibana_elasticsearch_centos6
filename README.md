@@ -610,6 +610,9 @@ service logstash start
 chkconfig logstash on
 ```
 
+Use this web site for debug:
+https://grokdebug.herokuapp.com/
+
 
 ## Install kibana
 
