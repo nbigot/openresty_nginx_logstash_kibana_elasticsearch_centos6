@@ -512,6 +512,49 @@ Some uri:
 ```
 
 
+## Install Java 8
+
+Java version 8 is used by logstash.
+It might work with java version 7.
+
+```bash
+# check new version
+java -version
+```
+
+If error message shows when launching logstash then we should install java 8.
+
+This howto can help:
+http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/
+
+This is a download page for java:
+http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+
+```bash
+alternatives --config java
+# it show the directory where java is installed
+# for example: /usr/lib/jvm/jre-1.7.0-openjdk.x86_64/bin/java
+# then press ctrl+c to exit programm
+# in this case we need to install java 8 in the directory /usr/lib/jvm/
+
+cd /usr/lib/jvm/
+wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64.tar.gz"
+tar xzf jdk-8u60-linux-x64.tar.gz
+
+alternatives --install /usr/bin/java java /usr/lib/jvm/jdk1.8.0_65/bin/java 2
+alternatives --config java
+# then type the number associated with jdk1.8.0_65 and press enter
+
+alternatives --install /usr/bin/jar jar /usr/lib/jvm/jdk1.8.0_65/bin/jar 2
+alternatives --install /usr/bin/javac javac /usr/lib/jvm/jdk1.8.0_65/bin/javac 2
+alternatives --set jar /usr/lib/jvm/jdk1.8.0_65/bin/jar
+alternatives --set javac /usr/lib/jvm/jdk1.8.0_65/bin/javac
+
+# check new version
+java -version
+```
+
+
 ## Install logstash
 
 ```bash
