@@ -576,8 +576,10 @@ vim /etc/init.d/logstash
 Should looks like something like this :
 
 ```
-LS_USER=logstash
-LS_GROUP=logstash
+#LS_USER=logstash
+LS_USER=root
+#LS_GROUP=logstash
+LS_GROUP=root
 LS_HOME=/var/lib/logstash
 LS_HEAP_SIZE="500m"
 LS_LOG_DIR=/var/log/logstash
